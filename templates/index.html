@@ -1,0 +1,38 @@
+{% extends 'bootstrap/base.html' %}
+    {% block content %}
+        <head>
+
+        </head>
+            <div class="container">
+        {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        {% endif %}
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Seleccionar archivo</label>
+                <input type="file" class="form-control-file" id="file" name="file">
+            </div>
+            <button type="submit" class="btn btn-primary">Cargar</button>
+        </form>
+        {% if json %}
+            <hr>
+            <h2>Resultado</h2>
+            <pre>{{ json }}</pre>
+        {% endif %}
+    </div>
+
+<hr>
+<div class="container ">
+{% if tabla_html %}
+    <div class="container">{{ tabla_html|safe }}</div>
+    <hr/>
+    <a href="{{ url_for('download', tabla_html=tabla_html) }}" class="btn btn-primary">Descargar tabla</a>
+{% endif %}
+
+</div>
+
+
+{% endblock %}
+
