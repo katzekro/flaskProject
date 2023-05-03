@@ -4,6 +4,7 @@ import pandas as pd
 from unidecode import unidecode
 import re
 from io import BytesIO
+from datetime import datetime
 
 app = Flask(__name__)
 Bootstrap(app)
@@ -15,14 +16,18 @@ def count_words(dialogos):
     return len(words)
 
 @app.route('/')
+
 def index():
+    fecha_actual = datetime.now().strftime('%d/%m/%Y')
     try:
-        return render_template('index.html')
+        return render_template('index.html', fecha_actual=fecha_actual)
     except Exception as e:
         return "Ha ocurrido un error: {}".format(str(e))
 
 @app.route('/', methods=['POST'])
+
 def upload_file():
+    fecha_actual = datetime.now().strftime('%d/%m/%Y')
     try:
         file = request.files['file']
         if not file:
@@ -30,8 +35,12 @@ def upload_file():
 
         #df = pd.read_excel(file)
         df = pd.read_excel(file, sheet_name='SCRIPT')
-        # Eliminar caracteres especiales, palabras '(REAC)' y '(REACS)', signos de admiración e interrogación
         df = df.applymap(lambda x: unidecode(str(x)))
+
+        # Eliminar espacios en blanco en la columna "PERSONAJE"
+        df['PERSONAJE'] = df['PERSONAJE'].str.strip()
+
+        # Eliminar caracteres especiales, palabras '(REAC)' y '(REACS)', signos de admiración e interrogación
         #df = df.applymap(lambda x: x.replace('(REAC)', '').replace('(REACS)', '').strip())
         df = df.applymap(lambda x: re.sub(r'[^\w\s]', '', x))
         df = df.applymap(lambda x: x.replace('!', '').replace('?', ''))
@@ -44,6 +53,9 @@ def upload_file():
         df['CANTIDAD_PALABRAS'] = df['DIALOGOS'].apply(count_words)
         df = df.sort_values(by='CANTIDAD_PALABRAS', ascending=False).reset_index(drop=True)
 
+        # Eliminar espacios en blanco en la columna 'PERSONAJE'
+        df['PERSONAJE'] = df['PERSONAJE'].str.strip()
+
         # Cambiar las tildes en el JSON generado
         json = df.to_json(orient='records', force_ascii=False)
 
@@ -52,7 +64,7 @@ def upload_file():
         tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False,classes='table table-striped table-bordered')
 
         # Agregar el HTML generado al contexto para que se pueda mostrar en la plantilla
-        return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped table-bordered", json=json)
+        return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped table-bordered", json=json, fecha_actual=fecha_actual)
 
     except Exception as e:
         return render_template('index.html', error='Error: {}'.format(str(e)))
@@ -73,5 +85,4 @@ def download():
         return "Error al descargar el archivo: {}".format(str(e))
 
 if __name__ == '__main__':
-    app.run()
-    #serve(app, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0')
