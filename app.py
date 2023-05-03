@@ -5,7 +5,8 @@ from unidecode import unidecode
 import re
 from io import BytesIO
 
-
+app = Flask(__name__)
+Bootstrap(app)
 
 def count_words(dialogos):
     words = []
@@ -13,42 +14,48 @@ def count_words(dialogos):
         words += dialogo.split()
     return len(words)
 
-app = Flask(__name__)
-Bootstrap(app)
-
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        return "Ha ocurrido un error: {}".format(str(e))
 
 @app.route('/', methods=['POST'])
 def upload_file():
-    file = request.files['file']
-    if not file:
-        return render_template('index.html', error='No se seleccionó archivo')
+    try:
+        file = request.files['file']
+        if not file:
+            return render_template('index.html', error='No se seleccionó archivo')
 
-    df = pd.read_excel(file)
+        #df = pd.read_excel(file)
+        df = pd.read_excel(file, sheet_name='SCRIPT')
+        # Eliminar caracteres especiales, palabras '(REAC)' y '(REACS)', signos de admiración e interrogación
+        df = df.applymap(lambda x: unidecode(str(x)))
+        #df = df.applymap(lambda x: x.replace('(REAC)', '').replace('(REACS)', '').strip())
+        df = df.applymap(lambda x: re.sub(r'[^\w\s]', '', x))
+        df = df.applymap(lambda x: x.replace('!', '').replace('?', ''))
 
-    # Eliminar caracteres especiales, palabras '(REAC)' y '(REACS)', signos de admiración e interrogación
-    df = df.applymap(lambda x: unidecode(str(x)))
-    df = df.applymap(lambda x: x.replace('(REAC)', '').replace('(REACS)', '').strip())
-    df = df.applymap(lambda x: re.sub(r'[^\w\s]', '', x))
-    df = df.applymap(lambda x: x.replace('!', '').replace('?', ''))
+        # Agrupar diálogos por personaje y eliminar personajes duplicados
+        df = df.groupby('PERSONAJE')['DIÁLOGO'].apply(list).reset_index()
+        df = df.rename(columns={'DIÁLOGO': 'DIALOGOS'})
 
-    # Agrupar diálogos por personaje y eliminar personajes duplicados
-    df = df.groupby('PERSONAJE')['DIALOGO'].apply(list).reset_index()
-    df = df.rename(columns={'DIALOGO': 'DIALOGOS'})
+        # Contar palabras en los diálogos y agregar columna al DataFrame
+        df['CANTIDAD_PALABRAS'] = df['DIALOGOS'].apply(count_words)
+        df = df.sort_values(by='CANTIDAD_PALABRAS', ascending=False).reset_index(drop=True)
 
-    # Contar palabras en los diálogos y agregar columna al DataFrame
-    df['CANTIDAD_PALABRAS'] = df['DIALOGOS'].apply(count_words)
+        # Cambiar las tildes en el JSON generado
+        json = df.to_json(orient='records', force_ascii=False)
 
-    # Cambiar las tildes en el JSON generado
-    json = df.to_json(orient='records', force_ascii=False)
+        # Crear una tabla HTML de pandas para mostrar los resultados
+        #tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False)
+        tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False,classes='table table-striped table-bordered')
 
-    # Crear una tabla HTML de pandas para mostrar los resultados
-    tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False)
+        # Agregar el HTML generado al contexto para que se pueda mostrar en la plantilla
+        return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped table-bordered", json=json)
 
-    # Agregar el HTML generado al contexto para que se pueda mostrar en la plantilla
-    return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped", json=json)
+    except Exception as e:
+        return render_template('index.html', error='Error: {}'.format(str(e)))
 
 @app.route('/download')
 def download():
@@ -67,3 +74,4 @@ def download():
 
 if __name__ == '__main__':
     app.run()
+    #serve(app, host='0.0.0.0', port=5000)

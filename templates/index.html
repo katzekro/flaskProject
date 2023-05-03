@@ -1,38 +1,64 @@
 {% extends 'bootstrap/base.html' %}
-    {% block content %}
-        <head>
+{% block styles %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+{% endblock %}
 
-        </head>
-            <div class="container">
+ {% block navbar %}
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="#">Contador de Palabras </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            {#<div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/">Inicio</a>
+                    </li>
+                </ul>
+            </div>#}
+        </nav>
+    {% endblock %}
+
+    {% block content %}
+            <div class="container mt-3">
         {% if error %}
             <div class="alert alert-danger" role="alert">
                 {{ error }}
             </div>
         {% endif %}
         <form method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="file">Seleccionar archivo</label>
+            <div class="form-group mt-3 ">
+                <label for="file"></label>
                 <input type="file" class="form-control-file" id="file" name="file">
             </div>
-            <button type="submit" class="btn btn-primary">Cargar</button>
+            <button type="submit" class="btn btn-primary mt-2">Procesar</button>
         </form>
-        {% if json %}
+        {#{% if json %}
             <hr>
             <h2>Resultado</h2>
             <pre>{{ json }}</pre>
-        {% endif %}
+        {% endif %}#}
     </div>
 
 <hr>
 <div class="container ">
 {% if tabla_html %}
-    <div class="container">{{ tabla_html|safe }}</div>
+    <div class="container "> {{ tabla_html|safe }}</div>
     <hr/>
-    <a href="{{ url_for('download', tabla_html=tabla_html) }}" class="btn btn-primary">Descargar tabla</a>
+    <a href="{{ url_for('download', tabla_html=tabla_html) }}" class="btn btn-primary mb-3">Descargar tabla</a>
 {% endif %}
 
 </div>
 
+ {% block footer %}
+   <div class="container text-center">
+      <div id="footer">
+           <p class="fw-bold">&copy 2023 UDC Cuernavaca, Derechos Reservados</p>
+     </div>
+  </div>
+   {%- endblock %}
 
 {% endblock %}
+
+
 
