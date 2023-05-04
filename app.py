@@ -1,12 +1,16 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for, Response
+from flask import Flask, render_template, request, send_file, redirect, url_for, flash , Response
 from flask_bootstrap import Bootstrap
 import pandas as pd
 from unidecode import unidecode
 import re
 from io import BytesIO
 from datetime import datetime
+import secrets
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = secrets.token_hex(16)
+
+
 Bootstrap(app)
 
 def count_words(dialogos):
@@ -35,6 +39,16 @@ def upload_file():
 
         #df = pd.read_excel(file)
         df = pd.read_excel(file, sheet_name='SCRIPT')
+        # Verificar celdas vacías en la columna PERSONAJE
+        if df['PERSONAJE'].isnull().values.any():
+            flash('El archivo no puede tener celdas vacías en la columna PERSONAJE', 'error')
+            return redirect(url_for('index'))
+
+        # Verificar celdas vacías en la columna DIÁLOGO
+        if df['DIÁLOGO'].isnull().values.any():
+            flash('El archivo no puede tener celdas vacías en la columna DIÁLOGO', 'error')
+            return redirect(url_for('index'))
+
         df = df.applymap(lambda x: unidecode(str(x)))
 
         # Eliminar espacios en blanco en la columna "PERSONAJE"
@@ -64,7 +78,7 @@ def upload_file():
         tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False,classes='table table-striped table-bordered')
 
         # Agregar el HTML generado al contexto para que se pueda mostrar en la plantilla
-        return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped table-bordered", json=json, fecha_actual=fecha_actual)
+        return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped table-bordered", json=json, fecha_actual=datetime.now().strftime('%d/%m/%Y'))
 
     except Exception as e:
         return render_template('index.html', error='Error: {}'.format(str(e)))
@@ -84,5 +98,10 @@ def download():
     except Exception as e:
         return "Error al descargar el archivo: {}".format(str(e))
 
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('error.html', error=error)
+
+
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+    app.run(host='0.0.0.0', port=8000, debug=True)
