@@ -19,6 +19,7 @@ def count_words(dialogos):
         words += dialogo.split()
     return len(words)
 
+
 @app.route('/')
 
 def index():
@@ -38,11 +39,41 @@ def upload_file():
             return render_template('index.html', error='No se seleccionó archivo')
 
         #df = pd.read_excel(file)
-        df = pd.read_excel(file, sheet_name='SCRIPT')
+        df = pd.read_excel(file, sheet_name='SCRIPT', )
+
+        # Verificar si la columna 'T.C' existe
+        if 'T.C' not in df.columns:
+            flash('Formato Incorrecto: El archivo debe contener una columna llamada: T.C', 'error')
+            return redirect(url_for('index'))
+
+        # Verificar si la columna 'PERSONAJE' existe
+        if 'PERSONAJE' not in df.columns:
+            flash('Formato Incorrecto: El archivo debe contener una columna llamada: PERSONAJE', 'error')
+            return redirect(url_for('index'))
+
+        # Verificar si la columna 'DIÁLOGO' existe
+        if 'DIÁLOGO' not in df.columns:
+            # Verificar si la columna 'DIALOGO' existe
+            if 'DIALOGO' in df.columns:
+                # Renombrar 'DIALOGO' a 'DIÁLOGO'
+                df = df.rename(columns={'DIALOGO': 'DIÁLOGO'})
+            else:
+                flash('Formato Incorrecto: El archivo debe contener una columna llamada DIÁLOGO o DIALOGO', 'error')
+                return redirect(url_for('index'))
+
+        # Verificar celdas vacías en la columna T.C
+        if df['T.C'].isnull().values.any():
+            flash('El archivo no puede tener celdas vacías en la columna T.C', 'error')
+            return redirect(url_for('index'))
+
         # Verificar celdas vacías en la columna PERSONAJE
         if df['PERSONAJE'].isnull().values.any():
             flash('El archivo no puede tener celdas vacías en la columna PERSONAJE', 'error')
             return redirect(url_for('index'))
+
+        # Verificar celdas vacías en la columna DIÁLOGO
+        #if df['DIÁLOGO'].isnull().values.any():
+            #flash('El archivo no puede tener celdas vacías en la columna DIÁLOGO', 'error')
 
         # Verificar celdas vacías en la columna DIÁLOGO
         if df['DIÁLOGO'].isnull().values.any():
