@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for, flash , Response
+from flask import Flask, render_template, request, send_file, redirect, url_for, flash , Response,make_response
 from flask_bootstrap import Bootstrap
 import pandas as pd
 from unidecode import unidecode
@@ -6,6 +6,9 @@ import re
 from io import BytesIO
 from datetime import datetime
 import secrets
+import string
+
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(16)
@@ -38,7 +41,6 @@ def upload_file():
         if not file:
             return render_template('index.html', error='No se seleccionó archivo')
 
-        #df = pd.read_excel(file)
         df = pd.read_excel(file, sheet_name='SCRIPT', )
 
         # Verificar si la columna 'T.C' existe
@@ -70,10 +72,6 @@ def upload_file():
         if df['PERSONAJE'].isnull().values.any():
             flash('El archivo no puede tener celdas vacías en la columna PERSONAJE', 'error')
             return redirect(url_for('index'))
-
-        # Verificar celdas vacías en la columna DIÁLOGO
-        #if df['DIÁLOGO'].isnull().values.any():
-            #flash('El archivo no puede tener celdas vacías en la columna DIÁLOGO', 'error')
 
         # Verificar celdas vacías en la columna DIÁLOGO
         if df['DIÁLOGO'].isnull().values.any():
@@ -133,6 +131,73 @@ def download():
 def internal_error(error):
     return render_template('error.html', error=error)
 
+def get_column_label(index):
+    alphabet = string.ascii_uppercase
+    label = ""
+    while index >= 0:
+        label = alphabet[index % 26] + label
+        index = index // 26 - 1
+    return label
+
+@app.route('/validar', methods=['GET', 'POST'])
+def validar():
+    fecha_actual = datetime.now().strftime('%d/%m/%Y')
+    if request.method == 'POST':
+        # Verificar si se ha enviado un archivo
+        if 'file' not in request.files:
+            raise Exception('No se ha enviado ningún archivo.')
+
+        file = request.files['file']
+
+        # Verificar si el archivo tiene un nombre y es un archivo Excel
+        if file.filename == '':
+            raise Exception('No se ha seleccionado ningún archivo.')
+
+        if not file.filename.endswith('.xlsx'):
+            raise Exception('El archivo debe tener formato .xlsx.')
+
+        # Leer el archivo Excel usando pandas
+        try:
+            df = pd.read_excel(file)
+        except Exception as e:
+            raise Exception(f'Error al leer el archivo: {str(e)}')
+
+        # Obtener las celdas vacías y generar una lista con su ubicación en formato "columna-fila"
+        empty_cells = []
+        count_empty_cells = 0  # Contador de celdas vacías
+
+        for index, row in df.iterrows():
+            for col in df.columns:
+                value = row[col]
+                if pd.isnull(value):
+                    if isinstance(col, int):
+                        label = get_column_label(col)
+                    else:
+                        label = col
+                    empty_cells.append(f'{label}-{index + 2}')
+                    count_empty_cells += 1
+
+                    # Verificar si se han encontrado más de 1000 celdas vacías
+                    if count_empty_cells > 1000:
+                        raise Exception('El archivo contiene más de 1000 celdas vacías. Se recomienda copiar el contenido del archivo a uno nuevo.')
+
+        if count_empty_cells == 0:
+            success_message = 'Validación exitosa: el archivo no contiene celdas vacías.'
+            empty_cells = None
+        else:
+            success_message = None
+
+        return render_template('resultado.html', empty_cells=empty_cells, success_message=success_message, fecha_actual=datetime.now().strftime('%d/%m/%Y'))
+
+    return render_template('validar.html',fecha_actual=datetime.now().strftime('%d/%m/%Y'))
+
+@app.errorhandler(Exception)
+def handle_error(error):
+    # Obtener el mensaje de error
+    error_message = str(error)
+
+    # Renderizar la plantilla de error
+    return render_template('error.html', error_message=error_message), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

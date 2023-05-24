@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Subir archivo Excel</title>
+</head>
+<body>
+ <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">
+            <img src="{{ url_for('static', filename='logoucd.jpg') }}" alt="Logo de la Aplicación">
+            UCD
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}"><i class="fa fa-sort-alpha-desc" aria-hidden="true"></i> Contador Palabras</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('validar') }}"><i class="fa fa-file-excel-o"></i> Rev. Excel</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+ <div class="container mt-3">
+     <h3>Revision Excel</h3>
+    <form action="/validar" method="POST" enctype="multipart/form-data">
+        <div class="form-group mt-3 ">
+        <input type="file" name="file" accept=".xlsx, .xls" >
+        </div>
+        <input type="submit" value="Validar" class="btn btn-primary mt-2">
+    </form>
+ </div>
+ <hr>
+<div class="container text-center">
+            <div id="footer">
+                <p class="fw-bold">&copy {{ fecha_actual }} UCD Cuernavaca, Derechos Reservados.</p>
+            </div>
+        </div>
+</body>
+</html>
