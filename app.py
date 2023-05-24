@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for, flash , Response,make_response
+from flask import Flask, render_template, request, send_file, redirect, url_for, flash, Response, make_response
 from flask_bootstrap import Bootstrap
 import pandas as pd
 from unidecode import unidecode
@@ -8,13 +8,10 @@ from datetime import datetime
 import secrets
 import string
 
-
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(16)
-
-
 Bootstrap(app)
+
 
 def count_words(dialogos):
     words = []
@@ -24,7 +21,6 @@ def count_words(dialogos):
 
 
 @app.route('/')
-
 def index():
     fecha_actual = datetime.now().strftime('%d/%m/%Y')
     try:
@@ -32,8 +28,8 @@ def index():
     except Exception as e:
         return "Ha ocurrido un error: {}".format(str(e))
 
-@app.route('/', methods=['POST'])
 
+@app.route('/', methods=['POST'])
 def upload_file():
     fecha_actual = datetime.now().strftime('%d/%m/%Y')
     try:
@@ -84,7 +80,7 @@ def upload_file():
         df['PERSONAJE'] = df['PERSONAJE'].str.strip()
 
         # Eliminar caracteres especiales, palabras '(REAC)' y '(REACS)', signos de admiración e interrogación
-        #df = df.applymap(lambda x: x.replace('(REAC)', '').replace('(REACS)', '').strip())
+        # df = df.applymap(lambda x: x.replace('(REAC)', '').replace('(REACS)', '').strip())
         df = df.applymap(lambda x: re.sub(r'[^\w\s]', '', x))
         df = df.applymap(lambda x: x.replace('!', '').replace('?', ''))
 
@@ -103,14 +99,17 @@ def upload_file():
         json = df.to_json(orient='records', force_ascii=False)
 
         # Crear una tabla HTML de pandas para mostrar los resultados
-        #tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False)
-        tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False,classes='table table-striped table-bordered')
+        # tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False)
+        tabla_html = df[['PERSONAJE', 'CANTIDAD_PALABRAS']].to_html(index=False,
+                                                                    classes='table table-striped table-bordered')
 
         # Agregar el HTML generado al contexto para que se pueda mostrar en la plantilla
-        return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped table-bordered", json=json, fecha_actual=datetime.now().strftime('%d/%m/%Y'))
+        return render_template('index.html', tabla_html=tabla_html, table_classes="table table-striped table-bordered",
+                               json=json, fecha_actual=datetime.now().strftime('%d/%m/%Y'))
 
     except Exception as e:
         return render_template('index.html', error='Error: {}'.format(str(e)))
+
 
 @app.route('/download')
 def download():
@@ -127,9 +126,11 @@ def download():
     except Exception as e:
         return "Error al descargar el archivo: {}".format(str(e))
 
+
 @app.errorhandler(500)
 def internal_error(error):
     return render_template('error.html', error=error)
+
 
 def get_column_label(index):
     alphabet = string.ascii_uppercase
@@ -138,6 +139,7 @@ def get_column_label(index):
         label = alphabet[index % 26] + label
         index = index // 26 - 1
     return label
+
 
 @app.route('/validar', methods=['GET', 'POST'])
 def validar():
@@ -179,7 +181,8 @@ def validar():
 
                     # Verificar si se han encontrado más de 1000 celdas vacías
                     if count_empty_cells > 1000:
-                        raise Exception('El archivo contiene más de 1000 celdas vacías. Se recomienda copiar el contenido del archivo a uno nuevo.')
+                        raise Exception(
+                            'El archivo contiene más de 1000 celdas vacías. Se recomienda copiar el contenido del archivo a uno nuevo.')
 
         if count_empty_cells == 0:
             success_message = 'Validación exitosa: el archivo no contiene celdas vacías.'
@@ -187,9 +190,11 @@ def validar():
         else:
             success_message = None
 
-        return render_template('resultado.html', empty_cells=empty_cells, success_message=success_message, fecha_actual=datetime.now().strftime('%d/%m/%Y'))
+        return render_template('resultado.html', empty_cells=empty_cells, success_message=success_message,
+                               fecha_actual=datetime.now().strftime('%d/%m/%Y'))
 
-    return render_template('validar.html',fecha_actual=datetime.now().strftime('%d/%m/%Y'))
+    return render_template('validar.html', fecha_actual=datetime.now().strftime('%d/%m/%Y'))
+
 
 @app.errorhandler(Exception)
 def handle_error(error):
@@ -198,6 +203,7 @@ def handle_error(error):
 
     # Renderizar la plantilla de error
     return render_template('error.html', error_message=error_message), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
